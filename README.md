@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/77569b14-630f-42a9-a9e6-67003f232a90)# EXP.NO.7-Simulation-of-Digital-Modulation-Techniques
+
 7. Simulation of Digital Modulation Techniques Such as
    i) Amplitude Shift Keying (ASK)
    ii) Frequency Shift Keying (FSK)
