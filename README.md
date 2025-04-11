@@ -1,4 +1,4 @@
-# EXP.NO.7-Simulation-of-Digital-Modulation-Techniques
+![image](https://github.com/user-attachments/assets/77569b14-630f-42a9-a9e6-67003f232a90)# EXP.NO.7-Simulation-of-Digital-Modulation-Techniques
 7. Simulation of Digital Modulation Techniques Such as
    i) Amplitude Shift Keying (ASK)
    ii) Frequency Shift Keying (FSK)
@@ -63,45 +63,60 @@ import matplotlib.pyplot as plt
 
 # Parameters
 bit_rate = 1  # bits per second
-f_c = 10      # carrier frequency in Hz
+Fs = 1000     # Sampling frequency (samples per second)
+Fc = 10       # Carrier frequency in Hz
+Tb = 1 / bit_rate  # Bit duration
 A1 = 1        # Amplitude for bit 1
 A0 = 0        # Amplitude for bit 0
-bit_count = 8  # Number of bits
-samples_per_bit = 100  # Resolution
+num_bits = 10  # Number of bits to transmit
 
-# Generate random binary data
-data = np.random.randint(0, 2, bit_count)
-print("Input data:", data)
+# Generate random bitstream
+bits = np.random.randint(0, 2, num_bits)
+print("Transmitted bits:", bits)
 
-# Time vector for one bit
-T = 1 / bit_rate
-t = np.linspace(0, bit_count * T, bit_count * samples_per_bit, endpoint=False)
+# Time vector for the entire signal
+t = np.arange(0, num_bits * Tb, 1 / Fs)
 
-# ASK signal generation
-ask_signal = np.array([])
-carrier = np.array([])
-for bit in data:
+# ASK modulation
+modulated_signal = np.zeros_like(t)
+carrier = np.cos(2 * np.pi * Fc * t)
+
+for i, bit in enumerate(bits):
     amplitude = A1 if bit == 1 else A0
-    t_bit = np.linspace(0, T, samples_per_bit, endpoint=False)
-    wave = amplitude * np.cos(2 * np.pi * f_c * t_bit)
-    ask_signal = np.concatenate((ask_signal, wave))
+    modulated_signal[i*Fs*int(Tb):(i+1)*Fs*int(Tb)] = amplitude * carrier[i*Fs*int(Tb):(i+1)*Fs*int(Tb)]
+
+# Add noise (optional)
+# noise = np.random.normal(0, 0.2, size=t.shape)
+# received_signal = modulated_signal + noise
+received_signal = modulated_signal  # no noise
+
+# Demodulation
+demod_bits = []
+for i in range(num_bits):
+    segment = received_signal[i*Fs*int(Tb):(i+1)*Fs*int(Tb)]
+    corr = np.sum(segment * carrier[i*Fs*int(Tb):(i+1)*Fs*int(Tb)])
+    demod_bits.append(1 if corr > 0.5 else 0)
+
+print("Demodulated bits: ", demod_bits)
 
 # Plotting
-plt.figure(figsize=(10, 6))
+plt.figure(figsize=(12, 8))
 
-# Plot binary data
-plt.subplot(2, 1, 1)
-plt.title("Binary Data and ASK Modulated Signal")
-plt.plot(np.repeat(data, samples_per_bit), label='Binary Data')
+plt.subplot(3, 1, 1)
+plt.title("Original Bitstream")
+plt.step(np.arange(num_bits), bits, where='post')
 plt.ylim(-0.5, 1.5)
-plt.ylabel("Bit Value")
 plt.grid(True)
 
-# Plot ASK modulated signal
-plt.subplot(2, 1, 2)
-plt.plot(t, ask_signal, label='ASK Signal', color='blue')
-plt.xlabel("Time (s)")
-plt.ylabel("Amplitude")
+plt.subplot(3, 1, 2)
+plt.title("ASK Modulated Signal")
+plt.plot(t, modulated_signal)
+plt.grid(True)
+
+plt.subplot(3, 1, 3)
+plt.title("Demodulated Bits")
+plt.step(np.arange(num_bits), demod_bits, where='post', color='r')
+plt.ylim(-0.5, 1.5)
 plt.grid(True)
 
 plt.tight_layout()
@@ -113,34 +128,63 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Parameters
-bit_rate = 1  # bits per second
-f1 = 5        # Frequency for bit 0
-f2 = 10       # Frequency for bit 1
-sampling_rate = 1000  # Hz
-bit_duration = 1 / bit_rate
-t = np.arange(0, bit_duration, 1 / sampling_rate)
+bit_rate = 1          # bits per second
+Fs = 1000             # Sampling frequency (samples per second)
+Tb = 1 / bit_rate     # Bit duration
+Fc0 = 5               # Frequency for bit 0
+Fc1 = 15              # Frequency for bit 1
+num_bits = 10         # Number of bits
 
-# Input binary data
-data = [1, 0, 1, 1, 0]
+# Generate random bitstream
+bits = np.random.randint(0, 2, num_bits)
+print("Transmitted bits:", bits)
 
-# Create the FSK modulated signal
-fsk_signal = np.array([])
+# Time vector
+t = np.arange(0, num_bits * Tb, 1 / Fs)
+modulated_signal = np.zeros_like(t)
 
-for bit in data:
-    freq = f2 if bit == 1 else f1
-    waveform = np.sin(2 * np.pi * freq * t)
-    fsk_signal = np.concatenate((fsk_signal, waveform))
+# Modulation
+for i, bit in enumerate(bits):
+    f = Fc1 if bit == 1 else Fc0
+    t_bit = np.arange(i * Tb, (i + 1) * Tb, 1 / Fs)
+    modulated_signal[i*int(Fs*Tb):(i+1)*int(Fs*Tb)] = np.cos(2 * np.pi * f * t_bit)
 
-# Time vector for the full signal
-total_time = np.arange(0, bit_duration * len(data), 1 / sampling_rate)
+# Add noise (optional)
+# noise = np.random.normal(0, 0.2, size=t.shape)
+# received_signal = modulated_signal + noise
+received_signal = modulated_signal
 
-# Plot the FSK signal
-plt.figure(figsize=(10, 4))
-plt.plot(total_time, fsk_signal, label='FSK Signal')
-plt.title('Frequency Shift Keying (FSK) Modulation')
-plt.xlabel('Time [s]')
-plt.ylabel('Amplitude')
+# Demodulation (simple energy detection)
+demod_bits = []
+for i in range(num_bits):
+    segment = received_signal[i*int(Fs*Tb):(i+1)*int(Fs*Tb)]
+    t_bit = np.arange(0, Tb, 1 / Fs)
+    corr0 = np.sum(segment * np.cos(2 * np.pi * Fc0 * t_bit))
+    corr1 = np.sum(segment * np.cos(2 * np.pi * Fc1 * t_bit))
+    demod_bits.append(1 if corr1 > corr0 else 0)
+
+print("Demodulated bits:", demod_bits)
+
+# Plotting
+plt.figure(figsize=(12, 8))
+
+plt.subplot(3, 1, 1)
+plt.title("Original Bitstream")
+plt.step(np.arange(num_bits), bits, where='post')
+plt.ylim(-0.5, 1.5)
 plt.grid(True)
+
+plt.subplot(3, 1, 2)
+plt.title("FSK Modulated Signal")
+plt.plot(t, modulated_signal)
+plt.grid(True)
+
+plt.subplot(3, 1, 3)
+plt.title("Demodulated Bitstream")
+plt.step(np.arange(num_bits), demod_bits, where='post', color='r')
+plt.ylim(-0.5, 1.5)
+plt.grid(True)
+
 plt.tight_layout()
 plt.show()
 ```
@@ -150,80 +194,77 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Parameters
-N = 1000                  # Number of bits
-Eb_N0_dB = 10             # SNR in dB
-Fs = 100                  # Samples per bit
-bit_rate = 1              # Bit rate
+bit_rate = 1          # bits per second
+Fs = 1000             # Sampling frequency (samples per second)
+Fc = 10               # Carrier frequency in Hz
+Tb = 1 / bit_rate     # Bit duration
+num_bits = 10         # Number of bits
+
+# Generate random bitstream
+bits = np.random.randint(0, 2, num_bits)
+print("Transmitted bits:", bits)
 
 # Time vector
-T = 1 / bit_rate
-t = np.linspace(0, N*T, N*Fs)
+t = np.arange(0, num_bits * Tb, 1 / Fs)
+carrier = np.cos(2 * np.pi * Fc * t)
+modulated_signal = np.zeros_like(t)
 
-# Generate random bits
-bits = np.random.randint(0, 2, N)
+# BPSK Modulation
+for i, bit in enumerate(bits):
+    phase = 0 if bit == 1 else np.pi
+    t_bit = np.arange(i * Tb, (i + 1) * Tb, 1 / Fs)
+    modulated_signal[i*int(Fs*Tb):(i+1)*int(Fs*Tb)] = np.cos(2 * np.pi * Fc * t_bit + phase)
 
-# BPSK Mapping: 0 -> -1, 1 -> +1
-bpsk_symbols = 2*bits - 1
+# Add noise (optional)
+# noise = np.random.normal(0, 0.2, size=t.shape)
+# received_signal = modulated_signal + noise
+received_signal = modulated_signal
 
-# Repeat each symbol to match sample rate
-modulated_signal = np.repeat(bpsk_symbols, Fs)
+# BPSK Demodulation (coherent detection)
+demod_bits = []
+for i in range(num_bits):
+    segment = received_signal[i*int(Fs*Tb):(i+1)*int(Fs*Tb)]
+    t_bit = np.arange(0, Tb, 1 / Fs)
+    reference = np.cos(2 * np.pi * Fc * t_bit)
+    corr = np.sum(segment * reference)
+    demod_bits.append(1 if corr > 0 else 0)
 
-# Add AWGN noise
-Eb_N0 = 10**(Eb_N0_dB / 10)
-noise_power = 1 / (2 * Eb_N0)
-noise = np.sqrt(noise_power) * np.random.randn(N*Fs)
-received_signal = modulated_signal + noise
+print("Demodulated bits:", demod_bits)
 
-# Demodulation (sampling and decision)
-sampled_signal = received_signal[Fs//2::Fs]
-received_bits = (sampled_signal > 0).astype(int)
+# Plotting
+plt.figure(figsize=(12, 8))
 
-# Calculate BER
-bit_errors = np.sum(bits != received_bits)
-ber = bit_errors / N
-print(f"Bit Error Rate (BER): {ber:.5f}")
+plt.subplot(3, 1, 1)
+plt.title("Original Bitstream")
+plt.step(np.arange(num_bits), bits, where='post')
+plt.ylim(-0.5, 1.5)
+plt.grid(True)
 
-# Plot signals
-plt.figure(figsize=(12, 6))
+plt.subplot(3, 1, 2)
+plt.title("BPSK Modulated Signal")
+plt.plot(t, modulated_signal)
+plt.grid(True)
 
-plt.subplot(2, 1, 1)
-plt.title("BPSK Modulated Signal (First 10 bits)")
-plt.plot(t[:10*Fs], modulated_signal[:10*Fs])
-plt.xlabel("Time")
-plt.ylabel("Amplitude")
-
-plt.subplot(2, 1, 2)
-plt.title("Received Signal with Noise (First 10 bits)")
-plt.plot(t[:10*Fs], received_signal[:10*Fs])
-plt.xlabel("Time")
-plt.ylabel("Amplitude")
+plt.subplot(3, 1, 3)
+plt.title("Demodulated Bitstream")
+plt.step(np.arange(num_bits), demod_bits, where='post', color='r')
+plt.ylim(-0.5, 1.5)
+plt.grid(True)
 
 plt.tight_layout()
-plt.show()
-
-# Constellation diagram
-plt.figure()
-plt.title("BPSK Constellation Diagram")
-plt.plot(sampled_signal[:100], np.zeros(100), 'bo')
-plt.grid(True)
-plt.xlabel("In-Phase")
-plt.ylabel("Quadrature")
-plt.axhline(0, color='k')
-plt.axvline(0, color='k')
 plt.show()
 ```
 
 # OUTPUT
 ASK Modulation
-![Screenshot 2025-04-09 193941](https://github.com/user-attachments/assets/2dd0f041-1922-4435-9971-ae005a4c67ab)
+![Screenshot 2025-04-11 132940](https://github.com/user-attachments/assets/e16c27c5-86cc-433f-99b9-42c9b731a6bf)
 
 FSK Modulation
-![Screenshot 2025-04-09 195100](https://github.com/user-attachments/assets/892e3f7b-f056-49bc-b1bf-8d0cfcffa7ba)
+![Screenshot 2025-04-11 133308](https://github.com/user-attachments/assets/6cf573ca-be8a-45d1-ab01-b91189481dfa)
 
 PSK Modulation
-![Screenshot 2025-04-09 195413](https://github.com/user-attachments/assets/81026b85-5d18-40c2-8310-1e2d07aadaa7)
-![Screenshot 2025-04-09 195430](https://github.com/user-attachments/assets/7dc4baab-957a-44cc-9c61-c42d4d3d840e)
- 
+![Screenshot 2025-04-11 133603](https://github.com/user-attachments/assets/8b205681-1e11-4957-9081-d734ad7eec8d)
+
 # RESULT / CONCLUSIONS
 ```
 Thus the simulation of digital modulation techniques of i)Amplitude Shift Keying(ASK) ii)Frequency Shift Keying(FSK) iii) Phase Shift Keying(PSK) are verified.
